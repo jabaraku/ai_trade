@@ -7,7 +7,7 @@ name = "ai-trading-platform"
 version = "0.1.0"
 description = "Local AI trading research platform using Gemma and XGBoost"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "duckdb>=1.0",
     "numpy>=1.26",

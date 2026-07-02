@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     market_data_provider: Literal["yfinance"] = "yfinance"
     default_price_period: str = "5y"
     default_price_interval: str = "1d"
+    default_watchlist_path: Path = Path("config/watchlist.txt")
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "gemma3:4b"

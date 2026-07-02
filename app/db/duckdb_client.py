@@ -74,6 +74,24 @@ class DuckDBClient:
                 [symbol.upper()],
             ).df()
 
+
+    def fetch_symbol_summary(self) -> pd.DataFrame:
+        """Return one row per locally stored symbol/provider pair."""
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT
+                    symbol,
+                    provider,
+                    COUNT(*) AS rows,
+                    MIN(trade_date) AS first_date,
+                    MAX(trade_date) AS latest_date
+                FROM price_bars
+                GROUP BY symbol, provider
+                ORDER BY symbol, provider
+                """
+            ).df()
+
     def execute(self, sql: str, parameters: Iterable | None = None) -> None:
         with self.connect() as con:
             con.execute(sql, parameters or [])
