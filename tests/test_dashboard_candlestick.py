@@ -6,6 +6,8 @@ import pytest
 from app.dashboard.charts import (
     BULLISH_CANDLE_COLOR,
     BEARISH_CANDLE_COLOR,
+    SMA_LINE_COLORS,
+    SMA_WINDOWS,
     build_candlestick_figure,
     normalize_duration,
     normalize_timeframe,
@@ -40,7 +42,7 @@ def test_build_candlestick_figure_uses_ohlc_and_red_green_colors():
 
     fig = build_candlestick_figure(prices, "AAPL")
 
-    assert len(fig.data) == 1
+    assert len(fig.data) == 1 + len(SMA_WINDOWS)
     candle = fig.data[0]
     assert candle.type == "candlestick"
     assert list(candle.open) == [100.0, 105.0]
@@ -113,3 +115,55 @@ def test_normalizers_reject_unsupported_values():
         normalize_timeframe("hourly")
     with pytest.raises(ValueError):
         normalize_duration("2Y")
+
+
+def test_build_candlestick_figure_adds_all_sma_overlay_traces_with_color_key():
+    prices = pd.DataFrame(
+        {
+            "trade_date": pd.bdate_range("2023-01-02", periods=240),
+            "open": [float(value) for value in range(100, 340)],
+            "high": [float(value) + 2 for value in range(100, 340)],
+            "low": [float(value) - 2 for value in range(100, 340)],
+            "close": [float(value) + 1 for value in range(100, 340)],
+            "volume": [1000] * 240,
+        }
+    )
+
+    fig = build_candlestick_figure(prices, "AAPL", timeframe="Daily", duration="1Y")
+
+    sma_traces = list(fig.data[1:])
+    assert [trace.name for trace in sma_traces] == [f"SMA {window}" for window in SMA_WINDOWS]
+    assert [trace.type for trace in sma_traces] == ["scatter"] * len(SMA_WINDOWS)
+    assert [trace.mode for trace in sma_traces] == ["lines"] * len(SMA_WINDOWS)
+    assert [trace.line.color for trace in sma_traces] == [
+        SMA_LINE_COLORS[window] for window in SMA_WINDOWS
+    ]
+    assert fig.layout.legend.title.text == "Color key"
+
+
+def test_prepare_candlestick_data_calculates_smas_before_duration_filter():
+    prices = pd.DataFrame(
+        {
+            "trade_date": pd.bdate_range("2023-01-02", periods=260),
+            "open": [float(value) for value in range(1, 261)],
+            "high": [float(value) + 1 for value in range(1, 261)],
+            "low": [float(value) - 1 for value in range(1, 261)],
+            "close": [float(value) for value in range(1, 261)],
+            "volume": [1000] * 260,
+        }
+    )
+
+    chart_data = prepare_candlestick_data(prices, timeframe="Daily", duration="3M")
+
+    assert len(chart_data) < len(prices)
+    assert "sma_200" in chart_data.columns
+    assert chart_data["sma_200"].tail(1).notna().item()
+
+
+def test_prepare_candlestick_data_includes_all_sma_columns():
+    prices = _sample_daily_prices()
+
+    chart_data = prepare_candlestick_data(prices, timeframe="Daily", duration="1Y")
+
+    for window in SMA_WINDOWS:
+        assert f"sma_{window}" in chart_data.columns

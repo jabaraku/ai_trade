@@ -9,6 +9,15 @@ import plotly.graph_objects as go
 BULLISH_CANDLE_COLOR = "#16a34a"
 BEARISH_CANDLE_COLOR = "#dc2626"
 
+SMA_WINDOWS: tuple[int, ...] = (5, 10, 20, 50, 200)
+SMA_LINE_COLORS: dict[int, str] = {
+    5: "#f59e0b",
+    10: "#2563eb",
+    20: "#7c3aed",
+    50: "#db2777",
+    200: "#64748b",
+}
+
 TIMEFRAME_OPTIONS: dict[str, str] = {
     "Daily": "D",
     "Weekly": "W-FRI",
@@ -52,16 +61,46 @@ def normalize_duration(duration: str) -> str:
     return normalized
 
 
+def _add_sma_overlay_columns(chart_data: pd.DataFrame) -> pd.DataFrame:
+    """Add SMA overlay columns calculated on the displayed candle timeframe.
+
+    The function expects the data to already be sorted and resampled to the selected
+    candle timeframe. For example, SMA 20 means 20 daily candles on Daily,
+    20 weekly candles on Weekly, and 20 monthly candles on Monthly.
+    """
+    data = chart_data.copy()
+    for window in SMA_WINDOWS:
+        data[f"sma_{window}"] = data["close"].rolling(window=window, min_periods=window).mean()
+    return data
+
+
+def _filter_by_duration(chart_data: pd.DataFrame, duration: str) -> pd.DataFrame:
+    """Filter chart data backward from the latest locally stored bar date."""
+    if chart_data.empty:
+        return chart_data.reset_index(drop=True)
+
+    normalized_duration = normalize_duration(duration)
+    latest_date = chart_data["trade_date"].max()
+    duration_offset = DURATION_OPTIONS[normalized_duration]
+    if duration_offset is None:
+        return chart_data.reset_index(drop=True)
+
+    start_date = latest_date - duration_offset
+    return chart_data[chart_data["trade_date"] >= start_date].reset_index(drop=True)
+
+
 def prepare_candlestick_data(
     prices: pd.DataFrame,
     timeframe: str = "Daily",
     duration: str = "1Y",
 ) -> pd.DataFrame:
-    """Filter local daily bars by duration and aggregate them to the selected timeframe.
+    """Prepare OHLCV candles plus SMA overlays for the selected chart controls.
 
-    The source data is expected to contain daily OHLCV bars. Duration is measured backward
-    from the latest locally stored trade date for the symbol, not from today's calendar date.
-    This makes the chart deterministic when the database is not freshly updated.
+    The source data is expected to contain daily OHLCV bars. Data is first sorted,
+    then aggregated to the selected timeframe, then SMA overlays are calculated,
+    and only then is the selected duration applied. Calculating SMAs before the
+    duration trim allows long overlays such as SMA 200 to appear on a 3M chart
+    when enough older local history exists.
     """
     if prices.empty:
         return prices.copy()
@@ -78,32 +117,26 @@ def prepare_candlestick_data(
     data["trade_date"] = pd.to_datetime(data["trade_date"])
     data = data.sort_values("trade_date")
 
-    latest_date = data["trade_date"].max()
-    duration_offset = DURATION_OPTIONS[normalized_duration]
-    if duration_offset is not None:
-        start_date = latest_date - duration_offset
-        data = data[data["trade_date"] >= start_date]
-
-    if data.empty or normalized_timeframe == "Daily":
-        return data.reset_index(drop=True)
-
-    rule = TIMEFRAME_OPTIONS[normalized_timeframe]
-    aggregated = (
-        data.set_index("trade_date")
-        .resample(rule)
-        .agg(
-            {
-                "open": "first",
-                "high": "max",
-                "low": "min",
-                "close": "last",
-                "volume": "sum",
-            }
+    if normalized_timeframe != "Daily":
+        rule = TIMEFRAME_OPTIONS[normalized_timeframe]
+        data = (
+            data.set_index("trade_date")
+            .resample(rule)
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna(subset=["open", "high", "low", "close"])
+            .reset_index()
         )
-        .dropna(subset=["open", "high", "low", "close"])
-        .reset_index()
-    )
-    return aggregated
+
+    data = _add_sma_overlay_columns(data)
+    return _filter_by_duration(data, normalized_duration)
 
 
 def build_candlestick_figure(
@@ -117,22 +150,38 @@ def build_candlestick_figure(
     normalized_duration = normalize_duration(duration)
     chart_data = prepare_candlestick_data(prices, normalized_timeframe, normalized_duration)
 
-    fig = go.Figure(
-        data=[
-            go.Candlestick(
-                x=chart_data["trade_date"],
-                open=chart_data["open"],
-                high=chart_data["high"],
-                low=chart_data["low"],
-                close=chart_data["close"],
-                increasing_line_color=BULLISH_CANDLE_COLOR,
-                increasing_fillcolor=BULLISH_CANDLE_COLOR,
-                decreasing_line_color=BEARISH_CANDLE_COLOR,
-                decreasing_fillcolor=BEARISH_CANDLE_COLOR,
-                name=symbol.upper(),
-            )
-        ]
+    fig = go.Figure()
+    fig.add_trace(
+        go.Candlestick(
+            x=chart_data["trade_date"],
+            open=chart_data["open"],
+            high=chart_data["high"],
+            low=chart_data["low"],
+            close=chart_data["close"],
+            increasing_line_color=BULLISH_CANDLE_COLOR,
+            increasing_fillcolor=BULLISH_CANDLE_COLOR,
+            decreasing_line_color=BEARISH_CANDLE_COLOR,
+            decreasing_fillcolor=BEARISH_CANDLE_COLOR,
+            name=f"{symbol.upper()} candles",
+        )
     )
+
+    for window in SMA_WINDOWS:
+        column_name = f"sma_{window}"
+        fig.add_trace(
+            go.Scatter(
+                x=chart_data["trade_date"],
+                y=chart_data[column_name],
+                mode="lines",
+                name=f"SMA {window}",
+                line={"color": SMA_LINE_COLORS[window], "width": 1.6},
+                hovertemplate=(
+                    f"SMA {window}<br>"
+                    "Date=%{x|%Y-%m-%d}<br>"
+                    "Value=%{y:.2f}<extra></extra>"
+                ),
+            )
+        )
     title = f"{symbol.upper()} {normalized_timeframe.lower()} candlestick chart · {normalized_duration}"
     fig.update_layout(
         title=title,
@@ -140,6 +189,15 @@ def build_candlestick_figure(
         yaxis_title="Price",
         xaxis_rangeslider_visible=False,
         height=560,
-        margin={"l": 20, "r": 20, "t": 60, "b": 20},
+        margin={"l": 20, "r": 20, "t": 70, "b": 20},
+        legend={
+            "title": {"text": "Color key"},
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "left",
+            "x": 0,
+        },
+        hovermode="x unified",
     )
     return fig

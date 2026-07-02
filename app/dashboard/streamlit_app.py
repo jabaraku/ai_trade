@@ -6,7 +6,6 @@ from pathlib import Path
 import streamlit as st
 
 from app.analysis.quick_report import build_gemma_prompt, build_quick_report
-from app.dashboard.analyze_actions import refresh_symbol_data
 from app.dashboard.charts import DURATION_OPTIONS, TIMEFRAME_OPTIONS, build_candlestick_figure
 from app.core.config import load_settings_or_raise
 from app.core.watchlist import load_watchlist, normalize_symbol
@@ -135,7 +134,6 @@ def main() -> None:
     with st.sidebar:
         st.header("Controls")
         period = st.selectbox("Ingestion period", ["6mo", "1y", "2y", "5y", "10y"], index=1)
-        ingest_symbol = st.text_input("Ingest tab ticker", value="AAPL").strip().upper()
         use_gemma = st.checkbox("Use Gemma explanation", value=False)
         st.divider()
         st.write("Database")
@@ -156,11 +154,25 @@ def main() -> None:
         col1, col2 = st.columns(2)
         with col1:
             st.write("Single symbol")
+            if "active_symbol_input" not in st.session_state:
+                st.session_state["active_symbol_input"] = "AAPL"
+            st.text_input(
+                "Ticker symbol",
+                key="active_symbol_input",
+                placeholder="AAPL",
+                help=(
+                    "This is the dashboard's shared symbol. The Analyze tab chart "
+                    "and JSON report use this same ticker."
+                ),
+            )
+            active_symbol = normalize_symbol(
+                str(st.session_state.get("active_symbol_input", "AAPL"))
+            )
             if st.button("Ingest ticker", type="primary"):
                 provider = YFinanceProvider()
-                with st.spinner(f"Ingesting {ingest_symbol} from yfinance..."):
+                with st.spinner(f"Ingesting {active_symbol} from yfinance..."):
                     result = ingest_one_symbol(
-                        symbol=ingest_symbol,
+                        symbol=active_symbol,
                         period=period,
                         provider=provider,
                         db=db,
@@ -189,40 +201,19 @@ def main() -> None:
 
     with tab_analyze:
         st.subheader("Analyze symbol")
-        if "analyze_symbol" not in st.session_state:
-            st.session_state["analyze_symbol"] = "AAPL"
-        if "analyze_symbol_input" not in st.session_state:
-            st.session_state["analyze_symbol_input"] = st.session_state["analyze_symbol"]
+        if "active_symbol_input" not in st.session_state:
+            st.session_state["active_symbol_input"] = "AAPL"
 
-        symbol_col, refresh_col = st.columns([5, 1])
-        with symbol_col:
-            st.text_input(
-                "Symbol",
-                key="analyze_symbol_input",
-                placeholder="AAPL",
-                help="Enter one ticker symbol, then click Refresh to ingest and display that symbol.",
-            )
-        with refresh_col:
-            st.write("")
-            refresh_clicked = st.button("Refresh", type="primary", use_container_width=True)
+        active_symbol = normalize_symbol(
+            str(st.session_state.get("active_symbol_input", "AAPL"))
+        )
+        st.caption(
+            "Analyze uses the ticker from the Ingest tab's **Ticker symbol** field. "
+            "To change the chart symbol, update that field on the Ingest tab and ingest the ticker."
+        )
+        st.info(f"Current analyze symbol: {active_symbol}")
 
-        if refresh_clicked:
-            requested_symbol = str(st.session_state.get("analyze_symbol_input", "AAPL"))
-            try:
-                with st.spinner(f"Refreshing {requested_symbol.strip().upper()} from yfinance..."):
-                    refreshed_symbol = refresh_symbol_data(
-                        symbol=requested_symbol,
-                        period=period,
-                        db=db,
-                    )
-            except Exception as exc:  # noqa: BLE001 - Streamlit should show user-facing errors.
-                st.error(f"Could not refresh symbol: {exc}")
-            else:
-                st.session_state["analyze_symbol"] = refreshed_symbol
-                st.session_state["analyze_symbol_input"] = refreshed_symbol
-                st.success(f"Refreshed {refreshed_symbol}. The JSON report and chart below now use this symbol.")
-
-        render_analysis(str(st.session_state["analyze_symbol"]), db, use_gemma)
+        render_analysis(active_symbol, db, use_gemma)
 
     with tab_config:
         st.subheader("Runtime configuration")

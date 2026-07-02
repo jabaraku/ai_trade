@@ -46,7 +46,7 @@ Ingest data first:
 python -m app.main ingest-price AAPL --period 1y
 ```
 
-Or use the Analyze tab Refresh button.
+Or use the dashboard Ingest tab's **Ingest ticker** button.
 
 ## Dashboard opens but chart is empty
 
@@ -95,3 +95,8 @@ Possible causes:
 - delisted or unsupported symbol.
 
 Try another symbol such as `AAPL` or wait and retry.
+
+
+## Streamlit session-state error after changing symbols
+
+The current dashboard avoids the previous `analyze_symbol_input` issue by using a single shared widget key, `active_symbol_input`, from the Ingest tab. The Analyze tab does not mutate widget-backed session state. If you customize the dashboard and see a session-state error, do not assign to a widget key after the widget has been instantiated.

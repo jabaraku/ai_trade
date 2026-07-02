@@ -51,9 +51,9 @@ python -m app.main doctor
 
 or in the dashboard Config tab.
 
-## Refresh behavior
+## Ingestion behavior
 
-Data is pulled only when you run an ingestion command or click Refresh in the Analyze tab.
+Data is pulled only when you run an ingestion command or click **Ingest ticker** / **Ingest default watchlist** in the dashboard.
 
 The system does not automatically refresh data in the background yet.
 

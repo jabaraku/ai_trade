@@ -26,7 +26,7 @@ The current repository includes:
 - feature preview: `python -m app.main features AAPL --tail 5`
 - optional Gemma explanation: `python -m app.main analyze AAPL --use-gemma`
 - Streamlit dashboard with Overview, Ingest, Analyze, and Config tabs
-- Analyze tab symbol text box and Refresh button
+- Shared Ingest tab ticker that drives the Analyze tab chart and JSON report
 - candlestick charts with duration and timeframe controls
 - local start/stop/status scripts
 

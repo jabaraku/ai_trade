@@ -31,18 +31,11 @@ The [Indicator Reference](documentation/indicators.md) explains every engineered
 
 
 
-## What changed in the Analyze symbol refresh upgrade
+## What changed in the shared Analyze symbol upgrade
 
-The Analyze tab now has its own symbol text box and a **Refresh** button. Type a ticker such as `MSFT`, `NVDA`, or `SPY`, then click **Refresh**. The dashboard will:
+The dashboard now uses one shared ticker field on the **Ingest** tab. Enter a ticker such as `MSFT`, `NVDA`, `SOXL`, or `SPY` in **Ingest → Ticker symbol**, click **Ingest ticker**, then open **Analyze**. The Analyze page automatically uses that same ticker for the JSON quick report and candlestick chart.
 
-1. normalize the symbol,
-2. fetch fresh daily OHLCV data from yfinance using the selected ingestion period,
-3. store the refreshed rows in DuckDB,
-4. switch the active Analyze tab symbol,
-5. rebuild the JSON quick report for that symbol, and
-6. redraw the candlestick chart using the selected timeframe and duration controls.
-
-The sidebar ticker remains available for the separate Ingest tab. The Analyze tab symbol is independent so changing the text box does not change the displayed report until you click **Refresh**.
+The Analyze tab no longer has its own symbol text box or Refresh button. This prevents Streamlit session-state conflicts and keeps the dashboard behavior simple: one active ticker drives both ingestion and analysis.
 
 ## What changed in the chart controls upgrade
 
@@ -54,6 +47,18 @@ The Analyze tab candlestick chart now has interactive button arrays:
 The chart uses locally stored daily OHLCV data and recalculates the displayed candles based on the selected combination.
 For example, `Weekly + 6M` shows weekly OHLC candles over the latest six months of locally stored data.
 `Monthly + 5Y` shows monthly OHLC candles over the latest five years of locally stored data.
+
+## What changed in the SMA overlay upgrade
+
+The Analyze tab candlestick chart now overlays all currently engineered simple moving averages:
+
+- `SMA 5`
+- `SMA 10`
+- `SMA 20`
+- `SMA 50`
+- `SMA 200`
+
+The chart includes a built-in **Color key** legend so each SMA line is visually identifiable. The SMA calculation follows the selected candle timeframe: on `Daily`, SMA 20 means 20 daily candles; on `Weekly`, SMA 20 means 20 weekly candles; on `Monthly`, SMA 20 means 20 monthly candles. SMA values are calculated before the selected duration is trimmed, so long overlays such as SMA 200 can still appear on shorter views like `3M` when enough older local history exists.
 
 ## What changed in the watchlist upgrade
 
@@ -244,7 +249,7 @@ Then open:
 http://localhost:8501
 ```
 
-The dashboard Analyze tab has a symbol text box and **Refresh** button. Enter a ticker, click **Refresh**, and the dashboard ingests fresh yfinance data for that symbol before updating the JSON quick report and chart. The chart displays red/green candlesticks using locally stored OHLC data. Green candles represent sessions where close is above open. Red candles represent sessions where close is below open. Use the top-right chart controls to switch between daily, weekly, and monthly candles. Use the bottom-left controls to switch between 3M, 6M, 1Y, 3Y, and 5Y durations.
+The dashboard uses the **Ingest tab → Ticker symbol** field as the single shared active symbol. Enter a ticker there, click **Ingest ticker**, then open Analyze to view the JSON quick report and chart for that symbol. The chart displays red/green candlesticks using locally stored OHLC data. Green candles represent sessions where close is above open. Red candles represent sessions where close is below open. It also overlays SMA 5, SMA 10, SMA 20, SMA 50, and SMA 200 lines with a Color key legend. Use the top-right chart controls to switch between daily, weekly, and monthly candles. Use the bottom-left controls to switch between 3M, 6M, 1Y, 3Y, and 5Y durations.
 
 Check status:
 

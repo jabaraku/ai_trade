@@ -26,7 +26,7 @@ Use this to pull local price history from yfinance.
 
 ### Single symbol
 
-1. Enter a ticker in the sidebar's **Ingest tab ticker** field.
+1. Enter a ticker in **Ingest → Ticker symbol**.
 2. Select an ingestion period.
 3. Click **Ingest ticker**.
 
@@ -40,14 +40,15 @@ The watchlist parser accepts blank lines and comments.
 
 ## Analyze tab
 
-The Analyze tab is symbol-driven.
+The Analyze tab uses the ticker from **Ingest → Ticker symbol**. It does not have its own ticker text box.
 
-1. Enter a ticker symbol in the Symbol text box.
-2. Click **Refresh**.
-3. The app fetches fresh yfinance data for that symbol.
-4. The app stores the refreshed data in DuckDB.
-5. The JSON report updates.
-6. The candlestick chart updates.
+1. Open the **Ingest** tab.
+2. Enter a ticker in **Ticker symbol**.
+3. Click **Ingest ticker** to fetch and store local data.
+4. Open the **Analyze** tab.
+5. The JSON report and candlestick chart display that same ticker.
+
+If the Analyze tab says no data was found, go back to **Ingest**, verify the ticker, and click **Ingest ticker**.
 
 ### Chart timeframe controls
 
@@ -69,7 +70,21 @@ Bottom-left buttons:
 - 3Y
 - 5Y
 
-The duration filter is applied before display, so the selected timeframe/duration combination controls the exact chart shown.
+The chart calculates SMA overlays before trimming to the selected duration, then displays only the selected duration. This lets long overlays such as SMA 200 appear on shorter views when enough older local history exists.
+
+### SMA overlay color key
+
+The chart shows these SMA overlays in the Plotly legend titled **Color key**:
+
+| Overlay | Meaning |
+|---|---|
+| SMA 5 | Short-term average of the last 5 displayed-timeframe closes. |
+| SMA 10 | Short-term average of the last 10 displayed-timeframe closes. |
+| SMA 20 | Approximate one-month average on daily candles, or 20 bars on the selected timeframe. |
+| SMA 50 | Intermediate trend average. |
+| SMA 200 | Long-term trend average. |
+
+For Weekly candles, SMA 20 means 20 weekly closes. For Monthly candles, SMA 20 means 20 monthly closes.
 
 Examples:
 

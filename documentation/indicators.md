@@ -199,6 +199,12 @@ Model use for all SMA values:
 - Helps the model understand trend at multiple horizons.
 - Useful when combined with `close_vs_sma_*` features.
 
+Dashboard chart use:
+
+- The Analyze tab overlays `SMA 5`, `SMA 10`, `SMA 20`, `SMA 50`, and `SMA 200` directly on the candlestick chart.
+- The chart legend is labeled **Color key** so each SMA line can be identified visually.
+- SMA periods are calculated on the selected candle timeframe. For example, Weekly + SMA 20 means 20 weekly closes, not 20 daily closes.
+
 Caveat:
 
 - Moving averages lag price because they summarize historical data.

@@ -44,7 +44,7 @@
 | `app/llm/ollama_client.py` | Sends prompts to local Ollama/Gemma. |
 | `app/dashboard/streamlit_app.py` | Streamlit dashboard UI. |
 | `app/dashboard/charts.py` | Candlestick chart construction and OHLC resampling. |
-| `app/dashboard/analyze_actions.py` | Analyze tab Refresh action. |
+| `app/dashboard/analyze_actions.py` | Legacy refresh helper retained for tests/future use; the dashboard now uses the shared Ingest ticker for Analyze. |
 
 ## Service boundaries
 
@@ -59,17 +59,17 @@ The current app is a local monolith, but it is organized as if it could later be
 
 This makes the code easier to test and easier to replace later. For example, `YFinanceProvider` can later be replaced with Polygon, Alpaca, Tradier, Databento, Interactive Brokers, or another market data source without rewriting the dashboard.
 
-## Data flow for Analyze Refresh
+## Data flow for shared ticker analysis
 
-When the user enters a symbol in the Analyze tab and clicks **Refresh**:
+When the user enters a symbol in the Ingest tab and clicks **Ingest ticker**:
 
-1. `streamlit_app.py` reads the text input.
-2. `refresh_symbol_data()` normalizes the ticker.
+1. `streamlit_app.py` reads `st.session_state["active_symbol_input"]`.
+2. `normalize_symbol()` normalizes the ticker.
 3. `YFinanceProvider` fetches price bars.
 4. `DuckDBClient` stores the rows.
-5. The active Analyze symbol is updated in Streamlit session state.
-6. `build_quick_report()` rebuilds the JSON report.
-7. `build_candlestick_figure()` rebuilds the chart.
+5. The Analyze tab reads the same `active_symbol_input` value.
+6. `build_quick_report()` rebuilds the JSON report from locally stored data.
+7. `build_candlestick_figure()` rebuilds the chart from locally stored data.
 8. If enabled, Gemma receives the updated report.
 
 ## Data flow for feature engineering
