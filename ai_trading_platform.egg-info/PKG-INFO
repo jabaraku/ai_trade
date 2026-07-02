@@ -1,0 +1,88 @@
+Metadata-Version: 2.4
+Name: ai-trading-platform
+Version: 0.1.0
+Summary: Local AI trading research platform using Gemma and XGBoost
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: duckdb>=1.0
+Requires-Dist: numpy>=1.26
+Requires-Dist: pandas>=2.2
+Requires-Dist: plotly>=5.20
+Requires-Dist: pydantic>=2.7
+Requires-Dist: pydantic-settings>=2.2
+Requires-Dist: python-dotenv>=1.0
+Requires-Dist: requests>=2.31
+Requires-Dist: rich>=13.7
+Requires-Dist: scikit-learn>=1.4
+Requires-Dist: streamlit>=1.35
+Requires-Dist: ta>=0.11
+Requires-Dist: tenacity>=8.2
+Requires-Dist: typer>=0.12
+Requires-Dist: xgboost>=2.0
+Requires-Dist: yfinance>=0.2
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"
+
+# AI Trading Research Platform - Volume 1 Starter
+
+This repository is the foundation for a local AI trading research platform using:
+
+- Gemma through Ollama for natural-language analysis
+- XGBoost for structured numerical prediction
+- DuckDB for local analytical storage
+- yfinance for prototype market data ingestion
+- Streamlit for the later dashboard
+
+This starter is intentionally paper-trading/research only. It does not place live trades.
+
+## Quick start on Windows PowerShell
+
+```powershell
+cd ai-trading-platform
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -e ".[dev]"
+copy .env.example .env
+python -m app.main doctor
+python -m app.main init-db
+python -m app.main ingest-price AAPL --period 1y
+python -m app.main analyze AAPL
+```
+
+## Quick start on macOS/Linux
+
+```bash
+cd ai-trading-platform
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e ".[dev]"
+cp .env.example .env
+python -m app.main doctor
+python -m app.main init-db
+python -m app.main ingest-price AAPL --period 1y
+python -m app.main analyze AAPL
+```
+
+## Local LLM check
+
+Install Ollama, then run one of these:
+
+```bash
+ollama pull gemma3:4b
+ollama run gemma3:4b
+```
+
+If your machine struggles, use the smallest Gemma model available in your Ollama library.
+
+## Project philosophy
+
+This project separates responsibilities:
+
+- Quantitative models produce probabilities and measurable signals.
+- Gemma explains, critiques, and summarizes evidence.
+- The risk engine constrains what the system is allowed to recommend.
+- Backtesting and paper trading decide whether ideas survive.
