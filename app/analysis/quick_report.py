@@ -70,16 +70,23 @@ def build_quick_report(symbol: str, price_df) -> dict:
 def build_gemma_prompt(report: dict) -> str:
     return f"""
 You are a cautious trading research assistant. You do not give financial advice.
-You explain market data in plain English and highlight uncertainty.
 
-Analyze this deterministic feature report:
+You must follow these rules:
+1. Do not invent timeframes.
+2. Do not say this is a 7-day, weekly, monthly, or yearly report unless that exact timeframe is provided.
+3. Treat this as a latest deterministic technical snapshot.
+4. Use the data_coverage section to describe how much historical data was available.
+5. Explain only the measured features shown in the report.
+6. Do not recommend buying, selling, calls, or puts.
+
+Analyze this deterministic price report:
 
 {report}
 
 Return:
-1. A neutral summary.
+1. Neutral summary.
 2. Bullish considerations.
 3. Bearish considerations.
-4. What data is missing before making any trading decision.
-5. A reminder that this is research only.
+4. Missing data before any trading decision.
+5. Research-only reminder.
 """.strip()
