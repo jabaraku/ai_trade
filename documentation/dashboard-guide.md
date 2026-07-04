@@ -26,7 +26,7 @@ Use this to pull local price history from yfinance.
 
 ### Single symbol
 
-1. Enter a ticker in **Ingest → Ticker symbol**.
+1. Enter a ticker in the sidebar **Ticker symbol** field.
 2. Select an ingestion period.
 3. Click **Ingest ticker**.
 
@@ -40,15 +40,15 @@ The watchlist parser accepts blank lines and comments.
 
 ## Analyze tab
 
-The Analyze tab uses the ticker from **Ingest → Ticker symbol**. It does not have its own ticker text box.
+The Analyze tab uses the ticker from the sidebar **Ticker symbol** field. It does not have its own ticker text box.
 
-1. Open the **Ingest** tab.
-2. Enter a ticker in **Ticker symbol**.
+1. Enter a ticker in the sidebar **Ticker symbol** field.
+2. Open the **Ingest** tab.
 3. Click **Ingest ticker** to fetch and store local data.
 4. Open the **Analyze** tab.
 5. The JSON report and candlestick chart display that same ticker.
 
-If the Analyze tab says no data was found, go back to **Ingest**, verify the ticker, and click **Ingest ticker**.
+If the Analyze tab says no data was found, verify the sidebar ticker, go back to **Ingest**, and click **Ingest ticker**.
 
 ### Chart timeframe controls
 
@@ -78,8 +78,6 @@ The chart shows these SMA overlays in the Plotly legend titled **Color key**:
 
 | Overlay | Meaning |
 |---|---|
-| SMA 5 | Short-term average of the last 5 displayed-timeframe closes. |
-| SMA 10 | Short-term average of the last 10 displayed-timeframe closes. |
 | SMA 20 | Approximate one-month average on daily candles, or 20 bars on the selected timeframe. |
 | SMA 50 | Intermediate trend average. |
 | SMA 200 | Long-term trend average. |

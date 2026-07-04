@@ -9,10 +9,8 @@ import plotly.graph_objects as go
 BULLISH_CANDLE_COLOR = "#16a34a"
 BEARISH_CANDLE_COLOR = "#dc2626"
 
-SMA_WINDOWS: tuple[int, ...] = (5, 10, 20, 50, 200)
+SMA_WINDOWS: tuple[int, ...] = (20, 50, 200)
 SMA_LINE_COLORS: dict[int, str] = {
-    5: "#f59e0b",
-    10: "#2563eb",
     20: "#7c3aed",
     50: "#db2777",
     200: "#64748b",

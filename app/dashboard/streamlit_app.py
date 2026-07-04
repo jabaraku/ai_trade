@@ -131,8 +131,24 @@ def main() -> None:
     st.title("AI Trading Research Platform")
     st.caption("Volume 1 local dashboard — research only, no live trading.")
 
+    if "active_symbol_input" not in st.session_state:
+        st.session_state["active_symbol_input"] = "AAPL"
+
     with st.sidebar:
         st.header("Controls")
+        st.text_input(
+            "Ticker symbol",
+            key="active_symbol_input",
+            placeholder="AAPL",
+            help=(
+                "This is the dashboard's shared active symbol. The Ingest tab, "
+                "Analyze tab chart, and JSON report all use this ticker."
+            ),
+        )
+        active_symbol = normalize_symbol(
+            str(st.session_state.get("active_symbol_input", "AAPL"))
+        )
+        st.caption(f"Active symbol: **{active_symbol}**")
         period = st.selectbox("Ingestion period", ["6mo", "1y", "2y", "5y", "10y"], index=1)
         use_gemma = st.checkbox("Use Gemma explanation", value=False)
         st.divider()
@@ -154,20 +170,8 @@ def main() -> None:
         col1, col2 = st.columns(2)
         with col1:
             st.write("Single symbol")
-            if "active_symbol_input" not in st.session_state:
-                st.session_state["active_symbol_input"] = "AAPL"
-            st.text_input(
-                "Ticker symbol",
-                key="active_symbol_input",
-                placeholder="AAPL",
-                help=(
-                    "This is the dashboard's shared symbol. The Analyze tab chart "
-                    "and JSON report use this same ticker."
-                ),
-            )
-            active_symbol = normalize_symbol(
-                str(st.session_state.get("active_symbol_input", "AAPL"))
-            )
+            st.caption("Uses the sidebar **Ticker symbol** field.")
+            st.info(f"Current ticker: {active_symbol}")
             if st.button("Ingest ticker", type="primary"):
                 provider = YFinanceProvider()
                 with st.spinner(f"Ingesting {active_symbol} from yfinance..."):
@@ -201,15 +205,9 @@ def main() -> None:
 
     with tab_analyze:
         st.subheader("Analyze symbol")
-        if "active_symbol_input" not in st.session_state:
-            st.session_state["active_symbol_input"] = "AAPL"
-
-        active_symbol = normalize_symbol(
-            str(st.session_state.get("active_symbol_input", "AAPL"))
-        )
         st.caption(
-            "Analyze uses the ticker from the Ingest tab's **Ticker symbol** field. "
-            "To change the chart symbol, update that field on the Ingest tab and ingest the ticker."
+            "Analyze uses the shared **Ticker symbol** field from the sidebar. "
+            "To change the chart symbol, update the sidebar ticker and ingest the ticker."
         )
         st.info(f"Current analyze symbol: {active_symbol}")
 
