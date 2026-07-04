@@ -17,6 +17,11 @@ from app.db.duckdb_client import DuckDBClient
 from app.llm.ollama_client import OllamaClient, OllamaGenerationOptions
 from app.services.ingestion import ingest_one_symbol, ingest_watchlist
 from app.services.indicators import calculate_and_store_indicators
+from app.tools.duckdb_context import (
+    DuckDBGemmaContextOptions,
+    build_duckdb_context,
+    build_gemma_db_prompt,
+)
 
 app = typer.Typer(help="AI Trading Research Platform command line interface.")
 logger = logging.getLogger(__name__)
@@ -268,6 +273,67 @@ def list_indicators():
     print(table)
 
 
+@app.command("db-context")
+def db_context_command(
+    symbol: str,
+    rows: int = typer.Option(5, "--rows", "-r", help="Number of latest rows to include, max 25."),
+):
+    """Print the controlled DuckDB context that can be sent to Gemma.
+
+    Example: python -m app.main db-context AAPL --rows 5
+    """
+    settings = bootstrap()
+    db = DuckDBClient(settings.db_path)
+    db.init_schema()
+    context = build_duckdb_context(
+        db=db,
+        symbol=symbol,
+        options=DuckDBGemmaContextOptions(row_limit=rows),
+    )
+    print(json.dumps(context, indent=2, default=str))
+
+
+@app.command("gemma-db")
+def gemma_db_command(
+    symbol: str,
+    question: str = typer.Argument(
+        "Summarize the latest price and indicator rows from DuckDB.",
+        help="Question Gemma should answer using controlled DuckDB context.",
+    ),
+    rows: int = typer.Option(5, "--rows", "-r", help="Number of latest DB rows to include, max 25."),
+):
+    """Ask local Gemma a question using safe, read-only DuckDB context.
+
+    Gemma never receives direct SQL access. Python extracts approved table rows
+    from price_bars and indicators, then sends that compact context to Ollama.
+
+    Example:
+        python -m app.main gemma-db AAPL "What does the indicators table say about trend?"
+    """
+    settings = bootstrap()
+    db = DuckDBClient(settings.db_path)
+    db.init_schema()
+    context = build_duckdb_context(
+        db=db,
+        symbol=symbol,
+        options=DuckDBGemmaContextOptions(row_limit=rows),
+    )
+
+    ollama = OllamaClient(
+        settings.ollama_base_url,
+        settings.ollama_model,
+        settings.ollama_timeout_seconds,
+        options=OllamaGenerationOptions(
+            num_predict=settings.ollama_num_predict,
+            num_ctx=settings.ollama_num_ctx,
+            keep_alive=settings.ollama_keep_alive,
+        ),
+    )
+    prompt = build_gemma_db_prompt(symbol=symbol, question=question, db_context=context)
+    print("[bold]Gemma database-context analysis[/bold]\n")
+    print(ollama.generate(prompt))
+
+
 @app.command()
 def analyze(symbol: str, use_gemma: bool = typer.Option(False, help="Ask local Gemma to explain report.")):
     """Build a deterministic first-pass analysis report."""
@@ -294,7 +360,12 @@ def analyze(symbol: str, use_gemma: bool = typer.Option(False, help="Ask local G
                 keep_alive=settings.ollama_keep_alive,
             ),
         )
-        prompt = build_gemma_prompt(report)
+        db_context = build_duckdb_context(
+            db=db,
+            symbol=normalized_symbol,
+            options=DuckDBGemmaContextOptions(row_limit=5),
+        )
+        prompt = build_gemma_prompt(report, db_context=db_context)
         print("\n[bold]Gemma analysis[/bold]\n")
         print(ollama.generate(prompt))
 

@@ -122,3 +122,46 @@ Later volumes can add:
 - local document retrieval,
 - multiple LLM providers,
 - automated report generation.
+
+## Gemma with DuckDB context
+
+Gemma should not directly read DuckDB or run SQL. Instead, Python creates a safe
+context object from approved DuckDB tables and inserts that context into the
+Gemma prompt.
+
+Flow:
+
+```text
+DuckDB price_bars and indicators
+        ↓
+Python safe context builder
+        ↓
+Gemma prompt
+        ↓
+Ollama local model
+        ↓
+Cautious explanation
+```
+
+Use this command to inspect the exact context:
+
+```powershell
+python -m app.main db-context AAPL --rows 5
+```
+
+Use this command to ask Gemma a database-aware question:
+
+```powershell
+python -m app.main gemma-db AAPL "Summarize the latest indicators table rows."
+```
+
+Safety rules:
+
+- Gemma cannot directly query the database.
+- Gemma receives only a compact read-only extract.
+- Gemma must not invent missing rows, dates, timeframes, or future outcomes.
+- If indicator rows are empty, calculate them first:
+
+```powershell
+python -m app.main calculate AAPL 5y
+```

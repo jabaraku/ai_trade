@@ -168,3 +168,29 @@ List persisted indicator coverage:
 ```bash
 python -m app.main list-indicators
 ```
+
+## DuckDB context for Gemma
+
+Gemma does not get direct SQL access. The application extracts a small, approved,
+read-only context from DuckDB and sends that context to Ollama/Gemma.
+
+Preview the exact context that would be sent to Gemma:
+
+```powershell
+python -m app.main db-context AAPL --rows 5
+```
+
+Ask Gemma a question using controlled DuckDB context:
+
+```powershell
+python -m app.main gemma-db AAPL "What do the latest indicator rows say about trend and momentum?"
+```
+
+The context includes:
+
+- `price_bars` summary for the symbol
+- latest `price_bars` rows
+- `indicators` summary for the symbol
+- latest `indicators` rows
+
+The row sample is capped to protect the CPU and keep local Gemma responsive.

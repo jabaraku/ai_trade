@@ -499,3 +499,31 @@ SELECT symbol, COUNT(*) AS rows, MIN(trade_date), MAX(trade_date)
 FROM indicators
 GROUP BY symbol;
 ```
+
+
+## Gemma with DuckDB context
+
+Gemma does not directly query DuckDB. The app now provides a safe Python tool
+layer that extracts approved read-only context from `price_bars` and
+`indicators`, then sends that compact context to Ollama/Gemma.
+
+Preview the exact database context:
+
+```powershell
+python -m app.main db-context AAPL --rows 5
+```
+
+Ask Gemma a database-aware question:
+
+```powershell
+python -m app.main gemma-db AAPL "What do the latest indicator rows say about trend and momentum?"
+```
+
+Recommended sequence:
+
+```powershell
+python -m app.main ingest-price AAPL --period 10y
+python -m app.main calculate AAPL 5y
+python -m app.main db-context AAPL --rows 5
+python -m app.main gemma-db AAPL "Explain the latest DuckDB indicators in plain English."
+```

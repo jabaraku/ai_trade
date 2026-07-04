@@ -161,6 +161,78 @@ class DuckDBClient:
                 [symbol.upper()],
             ).df()
 
+
+    def fetch_price_summary(self, symbol: str) -> pd.DataFrame:
+        """Return price_bars coverage for one symbol."""
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT
+                    symbol,
+                    provider,
+                    COUNT(*) AS rows,
+                    MIN(trade_date) AS first_date,
+                    MAX(trade_date) AS latest_date,
+                    MIN(close) AS min_close,
+                    MAX(close) AS max_close,
+                    AVG(close) AS avg_close
+                FROM price_bars
+                WHERE symbol = ?
+                GROUP BY symbol, provider
+                ORDER BY provider
+                """,
+                [symbol.upper()],
+            ).df()
+
+    def fetch_latest_price_bars(self, symbol: str, limit: int = 5) -> pd.DataFrame:
+        """Return latest price_bars rows for one symbol in descending date order."""
+        safe_limit = max(1, min(int(limit), 100))
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT *
+                FROM price_bars
+                WHERE symbol = ?
+                ORDER BY trade_date DESC
+                LIMIT ?
+                """,
+                [symbol.upper(), safe_limit],
+            ).df()
+
+    def fetch_indicator_symbol_summary(self, symbol: str) -> pd.DataFrame:
+        """Return indicators coverage for one symbol."""
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT
+                    symbol,
+                    COUNT(*) AS rows,
+                    MIN(trade_date) AS first_date,
+                    MAX(trade_date) AS latest_date,
+                    MAX(calculation_duration) AS latest_duration,
+                    MAX(calculated_at) AS latest_calculated_at
+                FROM indicators
+                WHERE symbol = ?
+                GROUP BY symbol
+                """,
+                [symbol.upper()],
+            ).df()
+
+    def fetch_latest_indicators(self, symbol: str, limit: int = 5) -> pd.DataFrame:
+        """Return latest persisted indicator rows for one symbol in descending date order."""
+        safe_limit = max(1, min(int(limit), 100))
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT *
+                FROM indicators
+                WHERE symbol = ?
+                ORDER BY trade_date DESC
+                LIMIT ?
+                """,
+                [symbol.upper(), safe_limit],
+            ).df()
+
     def execute(self, sql: str, parameters: Iterable | None = None) -> None:
         with self.connect() as con:
             con.execute(sql, parameters or [])

@@ -67,14 +67,32 @@ def build_quick_report(symbol: str, price_df) -> dict:
     }
 
 
-def build_gemma_prompt(report: dict) -> str:
+def build_gemma_prompt(report: dict, db_context: dict | None = None) -> str:
+    """Build the cautious Gemma prompt for deterministic report explanation.
+
+    When db_context is provided, Gemma receives a compact read-only extract from
+    DuckDB. Gemma still cannot query the database directly.
+    """
+    context_block = ""
+    if db_context is not None:
+        context_block = f"""
+
+Controlled DuckDB context prepared by Python:
+{db_context}
+
+Important database-context rules:
+- You cannot query DuckDB directly.
+- Use only the report and context included in this prompt.
+- Do not invent dates, rows, timeframes, or future outcomes.
+"""
+
     return f"""
 You are a cautious trading research assistant. You do not give financial advice.
 You explain market data in plain English and highlight uncertainty.
 
 Analyze this deterministic feature report:
 
-{report}
+{report}{context_block}
 
 Return:
 1. A neutral summary.

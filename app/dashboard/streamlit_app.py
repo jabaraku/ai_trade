@@ -13,6 +13,7 @@ from app.data.providers.yfinance_provider import YFinanceProvider
 from app.db.duckdb_client import DuckDBClient
 from app.llm.ollama_client import OllamaClient, OllamaGenerationError, OllamaGenerationOptions
 from app.services.ingestion import ingest_one_symbol, ingest_watchlist
+from app.tools.duckdb_context import DuckDBGemmaContextOptions, build_duckdb_context
 
 
 st.set_page_config(page_title="AI Trading Research Platform", page_icon="📈", layout="wide")
@@ -133,7 +134,12 @@ def render_analysis(symbol: str, db: DuckDBClient, use_gemma: bool) -> None:
         )
         with st.spinner("Asking Gemma for a cautious research explanation..."):
             try:
-                st.markdown(ollama.generate(build_gemma_prompt(report)))
+                db_context = build_duckdb_context(
+                    db=db,
+                    symbol=normalized,
+                    options=DuckDBGemmaContextOptions(row_limit=5),
+                )
+                st.markdown(ollama.generate(build_gemma_prompt(report, db_context=db_context)))
             except OllamaGenerationError as exc:
                 st.error(str(exc))
                 st.info(
