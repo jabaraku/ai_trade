@@ -33,7 +33,7 @@ The [Indicator Reference](documentation/indicators.md) explains every engineered
 
 ## What changed in the shared Analyze symbol upgrade
 
-The dashboard now uses one shared ticker field on the **Ingest** tab. Enter a ticker such as `MSFT`, `NVDA`, `SOXL`, or `SPY` in **Ingest → Ticker symbol**, click **Ingest ticker**, then open **Analyze**. The Analyze page automatically uses that same ticker for the JSON quick report and candlestick chart.
+The dashboard now uses one shared ticker field in the **sidebar**. Enter a ticker such as `MSFT`, `NVDA`, `SOXL`, or `SPY` in the sidebar **Ticker symbol** field, open **Ingest**, click **Ingest ticker**, then open **Analyze**. The Analyze page automatically uses that same sidebar ticker for the JSON quick report and candlestick chart.
 
 The Analyze tab no longer has its own symbol text box or Refresh button. This prevents Streamlit session-state conflicts and keeps the dashboard behavior simple: one active ticker drives both ingestion and analysis.
 
@@ -50,10 +50,8 @@ For example, `Weekly + 6M` shows weekly OHLC candles over the latest six months 
 
 ## What changed in the SMA overlay upgrade
 
-The Analyze tab candlestick chart now overlays all currently engineered simple moving averages:
+The Analyze tab candlestick chart now overlays the medium- and long-term simple moving averages:
 
-- `SMA 5`
-- `SMA 10`
 - `SMA 20`
 - `SMA 50`
 - `SMA 200`
@@ -249,7 +247,7 @@ Then open:
 http://localhost:8501
 ```
 
-The dashboard uses the **Ingest tab → Ticker symbol** field as the single shared active symbol. Enter a ticker there, click **Ingest ticker**, then open Analyze to view the JSON quick report and chart for that symbol. The chart displays red/green candlesticks using locally stored OHLC data. Green candles represent sessions where close is above open. Red candles represent sessions where close is below open. It also overlays SMA 5, SMA 10, SMA 20, SMA 50, and SMA 200 lines with a Color key legend. Use the top-right chart controls to switch between daily, weekly, and monthly candles. Use the bottom-left controls to switch between 3M, 6M, 1Y, 3Y, and 5Y durations.
+The dashboard uses the **sidebar → Ticker symbol** field as the single shared active symbol. Enter a ticker there, open Ingest, click **Ingest ticker**, then open Analyze to view the JSON quick report and chart for that symbol. The chart displays red/green candlesticks using locally stored OHLC data. Green candles represent sessions where close is above open. Red candles represent sessions where close is below open. It also overlays SMA 20, SMA 50, and SMA 200 lines with a Color key legend. Use the top-right chart controls to switch between daily, weekly, and monthly candles. Use the bottom-left controls to switch between 3M, 6M, 1Y, 3Y, and 5Y durations.
 
 Check status:
 

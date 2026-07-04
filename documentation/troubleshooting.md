@@ -99,4 +99,4 @@ Try another symbol such as `AAPL` or wait and retry.
 
 ## Streamlit session-state error after changing symbols
 
-The current dashboard avoids the previous `analyze_symbol_input` issue by using a single shared widget key, `active_symbol_input`, from the Ingest tab. The Analyze tab does not mutate widget-backed session state. If you customize the dashboard and see a session-state error, do not assign to a widget key after the widget has been instantiated.
+The current dashboard avoids the previous `analyze_symbol_input` issue by using a single shared widget key, `active_symbol_input`, from the sidebar. The Analyze tab does not mutate widget-backed session state. If you customize the dashboard and see a session-state error, do not assign to a widget key after the widget has been instantiated.

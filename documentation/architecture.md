@@ -61,7 +61,7 @@ This makes the code easier to test and easier to replace later. For example, `YF
 
 ## Data flow for shared ticker analysis
 
-When the user enters a symbol in the Ingest tab and clicks **Ingest ticker**:
+When the user enters a symbol in the sidebar and clicks **Ingest ticker** on the Ingest tab:
 
 1. `streamlit_app.py` reads `st.session_state["active_symbol_input"]`.
 2. `normalize_symbol()` normalizes the ticker.

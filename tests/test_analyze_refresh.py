@@ -57,11 +57,13 @@ def test_refresh_symbol_data_rejects_blank_symbol():
         refresh_symbol_data(symbol=" ", period="1y", db=FakeDb(), provider_factory=FakeProvider)
 
 
-def test_analyze_tab_uses_shared_ingest_symbol_instead_of_own_text_box():
+def test_analyze_tab_uses_sidebar_symbol_instead_of_own_text_box():
     text = Path("app/dashboard/streamlit_app.py").read_text(encoding="utf-8")
+    assert 'with st.sidebar:' in text
     assert '"Ticker symbol"' in text
     assert 'key="active_symbol_input"' in text
-    assert 'Analyze uses the ticker from the Ingest tab' in text
+    assert 'Uses the sidebar **Ticker symbol** field.' in text
+    assert 'Analyze uses the shared **Ticker symbol** field from the sidebar.' in text
     assert 'render_analysis(active_symbol, db, use_gemma)' in text
     assert 'analyze_symbol_input' not in text
     assert 'st.button("Refresh"' not in text
