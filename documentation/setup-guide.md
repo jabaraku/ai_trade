@@ -15,7 +15,7 @@ From the folder where you extracted the project:
 
 ```powershell
 cd C:\Users\Administrator\Documents\trading\ai_trading_platform_volume1_starter\ai_trading_platform_volume1_starter
-py -3.14 -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -e ".[dev]"

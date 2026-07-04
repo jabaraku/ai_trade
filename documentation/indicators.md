@@ -583,3 +583,15 @@ from the input feature matrix.
 | Volume ratio | Unusual activity. |
 | Dollar volume | Liquidity. |
 | Targets | Future labels for ML training only. |
+
+## Persisted indicator rows
+
+The indicator values documented above can now be written to the DuckDB `indicators` table by running:
+
+```powershell
+python -m app.main calculate AAPL 5y
+```
+
+The table stores one row per symbol and trade date for the requested duration. Supported durations are `3m`, `6m`, `1y`, `3y`, and `5y`. The maximum persisted duration is `5y`.
+
+Future-looking labels such as `future_return_1d`, `future_return_5d`, `target_up_1d`, and `target_up_5d` are intentionally not stored in this table. Those labels belong in a later supervised machine-learning dataset, not in the current live-style indicator table.

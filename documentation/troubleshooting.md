@@ -100,3 +100,47 @@ Try another symbol such as `AAPL` or wait and retry.
 ## Streamlit session-state error after changing symbols
 
 The current dashboard avoids the previous `analyze_symbol_input` issue by using a single shared widget key, `active_symbol_input`, from the sidebar. The Analyze tab does not mutate widget-backed session state. If you customize the dashboard and see a session-state error, do not assign to a widget key after the widget has been instantiated.
+
+
+## Gemma gets stuck or CPU gets hot
+
+This usually means Ollama is running the local model on CPU. On a laptop without a dedicated NVIDIA GPU, this can be slow and can make the machine hot.
+
+Immediate actions:
+
+1. Stop the running command with `Ctrl+C`.
+2. Turn off **Use Gemma explanation** in the dashboard if you only need the JSON report.
+3. Use the smaller model:
+
+```powershell
+ollama pull gemma3:1b
+```
+
+4. In `.env`, use CPU-safe settings:
+
+```text
+OLLAMA_MODEL=gemma3:1b
+OLLAMA_TIMEOUT_SECONDS=60
+OLLAMA_NUM_PREDICT=350
+OLLAMA_NUM_CTX=2048
+OLLAMA_KEEP_ALIVE=1m
+```
+
+5. If it still runs hot, lower output length:
+
+```text
+OLLAMA_NUM_PREDICT=200
+OLLAMA_TIMEOUT_SECONDS=45
+```
+
+Unload the model from Ollama memory:
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:11434/api/generate -Method Post -ContentType "application/json" -Body '{"model":"gemma3:1b","prompt":"","keep_alive":0}'
+```
+
+Stop Ollama completely only if needed:
+
+```powershell
+taskkill /F /IM ollama.exe
+```

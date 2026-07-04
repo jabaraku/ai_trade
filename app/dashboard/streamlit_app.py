@@ -11,7 +11,7 @@ from app.core.config import load_settings_or_raise
 from app.core.watchlist import load_watchlist, normalize_symbol
 from app.data.providers.yfinance_provider import YFinanceProvider
 from app.db.duckdb_client import DuckDBClient
-from app.llm.ollama_client import OllamaClient
+from app.llm.ollama_client import OllamaClient, OllamaGenerationError, OllamaGenerationOptions
 from app.services.ingestion import ingest_one_symbol, ingest_watchlist
 
 
@@ -117,12 +117,29 @@ def render_analysis(symbol: str, db: DuckDBClient, use_gemma: bool) -> None:
             base_url=settings.ollama_base_url,
             model=settings.ollama_model,
             timeout_seconds=settings.ollama_timeout_seconds,
+            options=OllamaGenerationOptions(
+                num_predict=settings.ollama_num_predict,
+                num_ctx=settings.ollama_num_ctx,
+                keep_alive=settings.ollama_keep_alive,
+            ),
         )
         if not ollama.healthcheck():
             st.error("Ollama is not reachable. Start Ollama or run scripts/start_project.ps1.")
             return
+        st.caption(
+            f"Gemma model: {settings.ollama_model} | "
+            f"max output tokens: {settings.ollama_num_predict} | "
+            f"timeout: {settings.ollama_timeout_seconds}s"
+        )
         with st.spinner("Asking Gemma for a cautious research explanation..."):
-            st.markdown(ollama.generate(build_gemma_prompt(report)))
+            try:
+                st.markdown(ollama.generate(build_gemma_prompt(report)))
+            except OllamaGenerationError as exc:
+                st.error(str(exc))
+                st.info(
+                    "For this laptop, try OLLAMA_MODEL=gemma3:1b, "
+                    "OLLAMA_NUM_PREDICT=200, or turn off 'Use Gemma explanation'."
+                )
 
 
 def main() -> None:

@@ -28,11 +28,58 @@ The `.env` file controls:
 
 ```text
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3:4b
-OLLAMA_TIMEOUT_SECONDS=120
+OLLAMA_MODEL=gemma3:1b
+OLLAMA_TIMEOUT_SECONDS=60
+OLLAMA_NUM_PREDICT=350
+OLLAMA_NUM_CTX=2048
+OLLAMA_KEEP_ALIVE=1m
 ```
 
 The exact model name must match what is installed in Ollama.
+
+
+## CPU-only laptop guidance
+
+Your current laptop can run Gemma locally, but it does not have a dedicated NVIDIA GPU. That means Ollama may use the CPU, which can make the laptop hot and make generation feel stuck.
+
+Recommended defaults for this project:
+
+```text
+OLLAMA_MODEL=gemma3:1b
+OLLAMA_TIMEOUT_SECONDS=60
+OLLAMA_NUM_PREDICT=350
+OLLAMA_NUM_CTX=2048
+OLLAMA_KEEP_ALIVE=1m
+```
+
+If the machine still gets hot, use:
+
+```text
+OLLAMA_NUM_PREDICT=200
+OLLAMA_TIMEOUT_SECONDS=45
+```
+
+The deterministic report does not require Gemma. You can always run:
+
+```bash
+python -m app.main analyze AAPL
+```
+
+Use Gemma only when you want a natural-language explanation of that report.
+
+## Stop a stuck local model
+
+In the terminal, press `Ctrl+C` if the command is still running. To ask Ollama to unload the model from memory, run:
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:11434/api/generate -Method Post -ContentType "application/json" -Body '{"model":"gemma3:1b","prompt":"","keep_alive":0}'
+```
+
+As a last resort on Windows, stop Ollama completely:
+
+```powershell
+taskkill /F /IM ollama.exe
+```
 
 ## Check Ollama availability
 

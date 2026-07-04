@@ -92,6 +92,75 @@ class DuckDBClient:
                 """
             ).df()
 
+
+    def upsert_indicators(self, df: pd.DataFrame) -> int:
+        """Insert or replace calculated technical indicator rows."""
+        if df.empty:
+            return 0
+        required = {"symbol", "trade_date", "calculation_duration", "source_row_count"}
+        missing = required.difference(df.columns)
+        if missing:
+            raise ValueError(f"Missing required indicator columns: {sorted(missing)}")
+
+        with self.connect() as con:
+            con.register("incoming_indicators", df)
+            con.execute(
+                """
+                INSERT OR REPLACE INTO indicators (
+                    symbol, trade_date, calculation_duration, source_row_count, calculated_at,
+                    return_1d, return_5d, return_21d, log_return_1d, daily_range_pct,
+                    open_to_close_pct, close_position_in_day_range,
+                    sma_5, sma_10, sma_20, sma_50, sma_200,
+                    close_vs_sma_5, close_vs_sma_10, close_vs_sma_20, close_vs_sma_50, close_vs_sma_200,
+                    ema_12, ema_26, macd_line, macd_signal, macd_histogram,
+                    rsi_14, true_range, atr_14, atr_14_pct, rolling_vol_20d, rolling_vol_20d_annualized,
+                    volume_sma_20, volume_ratio_20, dollar_volume, dollar_volume_sma_20
+                )
+                SELECT
+                    symbol, trade_date, calculation_duration, source_row_count, CURRENT_TIMESTAMP AS calculated_at,
+                    return_1d, return_5d, return_21d, log_return_1d, daily_range_pct,
+                    open_to_close_pct, close_position_in_day_range,
+                    sma_5, sma_10, sma_20, sma_50, sma_200,
+                    close_vs_sma_5, close_vs_sma_10, close_vs_sma_20, close_vs_sma_50, close_vs_sma_200,
+                    ema_12, ema_26, macd_line, macd_signal, macd_histogram,
+                    rsi_14, true_range, atr_14, atr_14_pct, rolling_vol_20d, rolling_vol_20d_annualized,
+                    volume_sma_20, volume_ratio_20, dollar_volume, dollar_volume_sma_20
+                FROM incoming_indicators
+                """
+            )
+        return len(df)
+
+    def fetch_indicator_summary(self) -> pd.DataFrame:
+        """Return one row per symbol already stored in the indicators table."""
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT
+                    symbol,
+                    COUNT(*) AS rows,
+                    MIN(trade_date) AS first_date,
+                    MAX(trade_date) AS latest_date,
+                    MAX(calculation_duration) AS latest_duration,
+                    MAX(calculated_at) AS latest_calculated_at
+                FROM indicators
+                GROUP BY symbol
+                ORDER BY symbol
+                """
+            ).df()
+
+    def fetch_indicators(self, symbol: str) -> pd.DataFrame:
+        """Fetch stored indicator rows for one symbol."""
+        with self.connect() as con:
+            return con.execute(
+                """
+                SELECT *
+                FROM indicators
+                WHERE symbol = ?
+                ORDER BY trade_date
+                """,
+                [symbol.upper()],
+            ).df()
+
     def execute(self, sql: str, parameters: Iterable | None = None) -> None:
         with self.connect() as con:
             con.execute(sql, parameters or [])

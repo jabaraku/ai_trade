@@ -314,11 +314,11 @@ Without `make`, use the PowerShell scripts directly.
 Install Ollama, then run one of these:
 
 ```bash
-ollama pull gemma3:4b
-ollama run gemma3:4b
+ollama pull gemma3:1b
+ollama run gemma3:1b
 ```
 
-If your machine struggles, use the smallest Gemma model available in your Ollama library.
+On CPU-only laptops, start with `gemma3:1b`. If Gemma still runs hot or feels stuck, lower `OLLAMA_NUM_PREDICT` to `200`, keep `OLLAMA_NUM_CTX` around `2048`, and turn off Gemma in the dashboard when you only need the deterministic JSON report.
 
 ## Project philosophy
 
@@ -451,3 +451,51 @@ make features-aapl
 ### Design rule
 
 Feature engineering must never mix inputs and labels. The feature frame uses only present and historical data by default. Future-looking columns are created only when `include_targets=True`, and those columns are for supervised training labels only.
+
+## Persisting calculated indicators
+
+You can now create a dedicated DuckDB table called `indicators` that stores daily calculated technical indicator values for a ticker.
+
+This is separate from the temporary feature preview command. The `features` command calculates features and prints them. The `calculate` command calculates features and stores them.
+
+### Example: calculate last 5 years of indicators
+
+First ingest enough price history:
+
+```powershell
+python -m app.main ingest-price AAPL --period 10y
+```
+
+Then manually calculate and persist indicators for the last 5 years:
+
+```powershell
+python -m app.main calculate AAPL 5y
+```
+
+You can also use the explicit alias:
+
+```powershell
+python -m app.main calculate-indicators AAPL 5y
+```
+
+Supported durations are:
+
+```text
+3m, 6m, 1y, 3y, 5y
+```
+
+The maximum persisted calculation duration is intentionally capped at `5y`. If your `price_bars` table contains 10 years of AAPL data, the system calculates indicators using the full available price history first, then stores only the last 5 years of daily indicator rows in the `indicators` table. This preserves long-window indicators such as `sma_200` while keeping the indicator table bounded.
+
+List stored indicator coverage:
+
+```powershell
+python -m app.main list-indicators
+```
+
+Query the table directly:
+
+```sql
+SELECT symbol, COUNT(*) AS rows, MIN(trade_date), MAX(trade_date)
+FROM indicators
+GROUP BY symbol;
+```

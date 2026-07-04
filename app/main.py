@@ -14,8 +14,9 @@ from app.core.logging import configure_logging
 from app.core.watchlist import normalize_symbol
 from app.data.providers.yfinance_provider import YFinanceProvider
 from app.db.duckdb_client import DuckDBClient
-from app.llm.ollama_client import OllamaClient
+from app.llm.ollama_client import OllamaClient, OllamaGenerationOptions
 from app.services.ingestion import ingest_one_symbol, ingest_watchlist
+from app.services.indicators import calculate_and_store_indicators
 
 app = typer.Typer(help="AI Trading Research Platform command line interface.")
 logger = logging.getLogger(__name__)
@@ -210,6 +211,63 @@ def features_command(
     print(table)
 
 
+@app.command("calculate")
+def calculate_indicators_command(symbol: str, duration: str):
+    """Manually calculate and persist daily technical indicators for one symbol.
+
+    Example: python -m app.main calculate AAPL 5y
+    """
+    settings = bootstrap()
+    db = DuckDBClient(settings.db_path)
+    db.init_schema()
+
+    result = calculate_and_store_indicators(symbol=symbol, duration=duration, db=db)
+    print(
+        f"[green]Stored {result.rows_stored} indicator rows for {result.symbol} "
+        f"({result.duration}).[/green]"
+    )
+    print(f"Source price rows: {result.source_rows}")
+    print(f"Indicator date range: {result.first_trade_date} to {result.latest_trade_date}")
+
+
+@app.command("calculate-indicators")
+def calculate_indicators_alias(symbol: str, duration: str):
+    """Alias for calculate, kept explicit for readability."""
+    calculate_indicators_command(symbol, duration)
+
+
+@app.command("list-indicators")
+def list_indicators():
+    """Show which symbols already have persisted indicator rows."""
+    settings = bootstrap()
+    db = DuckDBClient(settings.db_path)
+    db.init_schema()
+    df = db.fetch_indicator_summary()
+
+    if df.empty:
+        print("[yellow]No indicator data found yet. Run: python -m app.main calculate AAPL 5y[/yellow]")
+        return
+
+    table = Table(title="Local indicator data")
+    table.add_column("Symbol", style="bold")
+    table.add_column("Rows", justify="right")
+    table.add_column("First date")
+    table.add_column("Latest date")
+    table.add_column("Latest duration")
+    table.add_column("Latest calculated at")
+
+    for row in df.to_dict("records"):
+        table.add_row(
+            row["symbol"],
+            str(row["rows"]),
+            str(row["first_date"]),
+            str(row["latest_date"]),
+            str(row["latest_duration"]),
+            str(row["latest_calculated_at"]),
+        )
+    print(table)
+
+
 @app.command()
 def analyze(symbol: str, use_gemma: bool = typer.Option(False, help="Ask local Gemma to explain report.")):
     """Build a deterministic first-pass analysis report."""
@@ -230,6 +288,11 @@ def analyze(symbol: str, use_gemma: bool = typer.Option(False, help="Ask local G
             settings.ollama_base_url,
             settings.ollama_model,
             settings.ollama_timeout_seconds,
+            options=OllamaGenerationOptions(
+                num_predict=settings.ollama_num_predict,
+                num_ctx=settings.ollama_num_ctx,
+                keep_alive=settings.ollama_keep_alive,
+            ),
         )
         prompt = build_gemma_prompt(report)
         print("\n[bold]Gemma analysis[/bold]\n")

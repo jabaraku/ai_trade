@@ -23,8 +23,11 @@ class Settings(BaseSettings):
     default_watchlist_path: Path = Path("config/watchlist.txt")
 
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "gemma3:4b"
-    ollama_timeout_seconds: int = Field(default=120, ge=5, le=600)
+    ollama_model: str = "gemma3:1b"
+    ollama_timeout_seconds: int = Field(default=60, ge=5, le=600)
+    ollama_num_predict: int = Field(default=350, ge=64, le=2048)
+    ollama_num_ctx: int = Field(default=2048, ge=512, le=32768)
+    ollama_keep_alive: str = "1m"
 
     enable_live_trading: bool = False
     enable_paper_trading: bool = False

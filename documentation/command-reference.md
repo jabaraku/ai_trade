@@ -136,3 +136,35 @@ make test
 ```
 
 On Windows, if `make` is not installed, use the equivalent Python or PowerShell commands directly.
+
+## Calculate and persist technical indicators
+
+The `calculate` command manually calculates daily technical indicators for one ticker and stores them in the DuckDB `indicators` table.
+
+```bash
+python -m app.main calculate AAPL 5y
+```
+
+Alias:
+
+```bash
+python -m app.main calculate-indicators AAPL 5y
+```
+
+Supported durations:
+
+```text
+3m
+6m
+1y
+3y
+5y
+```
+
+The maximum duration is `5y`. If more price history exists in `price_bars`, the feature engine calculates indicators using all available history first, then persists only the requested duration. This helps long-window indicators such as `sma_200` remain accurate.
+
+List persisted indicator coverage:
+
+```bash
+python -m app.main list-indicators
+```
